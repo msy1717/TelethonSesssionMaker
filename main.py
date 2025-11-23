@@ -27,6 +27,7 @@ from telethon.errors import (
     ApiIdInvalidError,
     PhoneCodeInvalidError,
     SessionPasswordNeededError,
+    PasswordHashInvalidError,
     FloodWaitError
 )
 import time
@@ -243,8 +244,18 @@ class SessionMaker:
                     try:
                         client.sign_in(parsed_phone, code)
                     except SessionPasswordNeededError:
-                        password = Prompt.ask("  [cyan]Enter your 2FA password[/cyan]", password=True)
-                        client.sign_in(password=password)
+                        max_password_attempts = 3
+                        for attempt in range(max_password_attempts):
+                            try:
+                                password = Prompt.ask("  [cyan]Enter your 2FA password[/cyan]", password=True)
+                                client.sign_in(password=password)
+                                break
+                            except PasswordHashInvalidError:
+                                if attempt < max_password_attempts - 1:
+                                    console.print(f"  [red]✗[/red] Invalid password. {max_password_attempts - attempt - 1} attempt(s) remaining.")
+                                else:
+                                    console.print(f"  [red]✗[/red] Invalid password. Maximum attempts reached.")
+                                    raise
                         
                 client.disconnect()
                 
@@ -262,6 +273,10 @@ class SessionMaker:
             return False
         except PhoneCodeInvalidError:
             console.print(f"[red]✗[/red] Invalid verification code")
+            self.failed_count += 1
+            return False
+        except PasswordHashInvalidError:
+            console.print(f"[red]✗[/red] Invalid 2FA password")
             self.failed_count += 1
             return False
         except FloodWaitError as e:
