@@ -55,6 +55,6 @@ for pphone in str_list:
     print()
 done = True
     
-print ('Need More Tools? @kalkidev on Telegram')
+print ('Need More Tools? @GODMRUNAL on Telegram')
 input("Done!" if done else "Error!")
 
